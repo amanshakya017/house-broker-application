@@ -1,0 +1,31 @@
+﻿@model IEnumerable<HouseBrokerApp.Core.Entities.PropertyListing>
+@{
+    ViewData["Title"] = "Broker Dashboard";
+}
+<h2>Broker Dashboard</h2>
+<div class="alert alert-info">
+    <strong>Total Commission:</strong> @ViewBag.TotalCommission.ToString("C")
+</div>
+<table class="table table-bordered">
+    <thead class="table-dark">
+        <tr>
+            <th>Type</th>
+            <th>Location</th>
+            <th>Price</th>
+            <th>Commission</th>
+            <th>Features</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.PropertyType</td>
+                <td>@item.Location</td>
+                <td>@item.Price.ToString("C")</td>
+                <td>@item.Commission.ToString("C")</td>
+                <td>@item.Features</td>
+            </tr>
+        }
+    </tbody>
+</table>

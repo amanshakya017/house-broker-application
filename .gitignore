@@ -1,0 +1,30 @@
+# Build outputs
+bin/
+obj/
+
+# Visual Studio
+.vs/
+
+# User-specific
+*.user
+*.suo
+
+# Logs
+*.log
+
+# NuGet packages
+*.nupkg
+*.snupkg
+packages/
+
+# EF Core local DB files (if used for dev)
+*.db
+*.mdf
+*.ldf
+
+# App secrets (local only, keep main appsettings.json in git)
+appsettings.Development.json
+appsettings.*.local.json
+
+# Test results
+TestResults/

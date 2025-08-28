@@ -1,0 +1,60 @@
+﻿@model HouseBrokerApp.Application.DTOs.ListingSearchModel
+
+<h2>Property Listings</h2>
+
+<form asp-action="Index" method="get" class="mb-3">
+    <div class="row">
+        <div class="col-md-3">
+            <input asp-for="Location" class="form-control" placeholder="Location" />
+        </div>
+        <div class="col-md-3">
+            <input asp-for="MinPrice" class="form-control" placeholder="Min Price" />
+        </div>
+        <div class="col-md-3">
+            <input asp-for="MaxPrice" class="form-control" placeholder="Max Price" />
+        </div>
+        <div class="col-md-3">
+            <input asp-for="PropertyType" class="form-control" placeholder="Property Type" />
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary mt-2">Search</button>
+</form>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Property Type</th>
+            <th>Location</th>
+            <th>Price</th>
+            <th>Features</th>
+            <th>Description</th>
+            <th>Image</th>
+            @if (User.IsInRole("Broker"))
+            {
+                <th>Commission</th>
+            }
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Listings)
+        {
+            <tr>
+                <td>@item.PropertyType</td>
+                <td>@item.Location</td>
+                <td>@item.Price</td>
+                <td>@item.Features</td>
+                <td>@item.Description</td>
+                <td>
+                    @if (!string.IsNullOrEmpty(item.ImageUrl))
+                    {
+                        <img src="@item.ImageUrl" alt="image" style="max-width:100px" />
+                    }
+                </td>
+                @if (User.IsInRole("Broker"))
+                {
+                    <td>@item.Commission</td>
+                }
+            </tr>
+        }
+    </tbody>
+</table>
