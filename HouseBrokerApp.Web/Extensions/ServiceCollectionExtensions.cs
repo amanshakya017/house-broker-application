@@ -33,6 +33,7 @@ namespace HouseBrokerApp.Web.Extensions
             services.AddScoped<IListingService, ListingService>();
             services.AddScoped<IBrokerService, BrokerService>();
             services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<IFileStorage, LocalFileStorage>();
 
             // Controllers with views
             services.AddControllersWithViews();

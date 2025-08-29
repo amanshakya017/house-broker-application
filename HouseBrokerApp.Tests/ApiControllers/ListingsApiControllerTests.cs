@@ -3,9 +3,11 @@ using HouseBrokerApp.Application.Interfaces;
 using HouseBrokerApp.Core.Enums;
 using HouseBrokerApp.Infrastructure.Identity;
 using HouseBrokerApp.Web.ApiControllers;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
+using System.Security.Claims;
 
 namespace HouseBrokerApp.Tests.ApiControllers
 {
@@ -13,13 +15,33 @@ namespace HouseBrokerApp.Tests.ApiControllers
     {
         private readonly Mock<IListingService> _mockListingService;
         private readonly Mock<UserManager<ApplicationUser>> _mockUserManager;
+        private readonly Mock<IFileStorage> _mockFileStorage;
         private readonly ListingsApiController _controller;
-
         public ListingsApiControllerTests()
         {
             _mockListingService = new Mock<IListingService>();
-            _mockUserManager = new Mock<UserManager<ApplicationUser>>();
-            _controller = new ListingsApiController(_mockListingService.Object, _mockUserManager.Object);
+
+            var store = new Mock<IUserStore<ApplicationUser>>();
+            _mockUserManager = new Mock<UserManager<ApplicationUser>>(
+                store.Object, null, null, null, null, null, null, null, null);
+
+            _mockFileStorage = new Mock<IFileStorage>();
+
+            _controller = new ListingsApiController(
+                _mockListingService.Object,
+                _mockUserManager.Object,
+                _mockFileStorage.Object
+            );
+        }
+
+        // Helper to safely create UserManager mock
+        private static Mock<UserManager<ApplicationUser>> MockUserManager()
+        {
+            var store = new Mock<IUserStore<ApplicationUser>>();
+            return new Mock<UserManager<ApplicationUser>>(
+                store.Object,
+                null, null, null, null, null, null, null, null
+            );
         }
 
         [Fact]
@@ -48,13 +70,41 @@ namespace HouseBrokerApp.Tests.ApiControllers
         [Fact]
         public async Task Create_ReturnsCreatedAtAction()
         {
-            var dto = new PropertyListingDto { Id = Guid.NewGuid(), PropertyType = PropertyType.Apartment, Location = "KTM", Price = 5000000 };
+            // Arrange
+            var stream = new MemoryStream(new byte[] { 1, 2, 3 });
+            var formFile = new FormFile(stream, 0, stream.Length, "file", "test.jpg");
 
+            var dto = new PropertyListingDto
+            {
+                PropertyType = PropertyType.House,
+                Location = "Kathmandu",
+                Price = 5000000,
+                Features = "3BHK",
+                Description = "Nice house",
+                ImageFile = formFile
+            };
+
+            _mockFileStorage.Setup(f => f.SaveFileAsync(It.IsAny<IFormFile>()))
+                .ReturnsAsync("/img/test.jpg");
+
+            _mockListingService.Setup(s => s.AddAsync(It.IsAny<PropertyListingDto>()))
+                .Returns(Task.CompletedTask);
+
+            _mockUserManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
+                .ReturnsAsync(new ApplicationUser { Id = Guid.NewGuid() });
+
+            // Act
             var result = await _controller.Create(dto);
 
-            var created = Assert.IsType<CreatedAtActionResult>(result);
-            Assert.Equal("GetById", created.ActionName);
+            // Assert
+            var createdAtActionResult = Assert.IsType<CreatedAtActionResult>(result);
+            var returnDto = Assert.IsType<PropertyListingDto>(createdAtActionResult.Value);
+
+            Assert.Equal("/img/test.jpg", returnDto.ImageUrl);
+            _mockListingService.Verify(s => s.AddAsync(It.IsAny<PropertyListingDto>()), Times.Once);
+            _mockFileStorage.Verify(f => f.SaveFileAsync(It.IsAny<IFormFile>()), Times.Once);
         }
+
 
         [Fact]
         public async Task Search_ReturnsOk_WithResults()

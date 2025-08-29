@@ -15,11 +15,16 @@ namespace HouseBrokerApp.Web.ApiControllers
     {
         private readonly IListingService _listingService;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IFileStorage _fileStorage;
 
-        public ListingsApiController(IListingService listingService, UserManager<ApplicationUser> userManager)
+        public ListingsApiController(
+            IListingService listingService,
+            UserManager<ApplicationUser> userManager,
+            IFileStorage fileStorage)
         {
             _listingService = listingService;
             _userManager = userManager;
+            _fileStorage = fileStorage ?? throw new ArgumentNullException(nameof(fileStorage));
         }
 
         /// <summary>
@@ -64,19 +69,10 @@ namespace HouseBrokerApp.Web.ApiControllers
         public async Task<IActionResult> Create([FromForm] PropertyListingDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
-
             // Save uploaded image if provided
             if (dto.ImageFile != null)
             {
-                var fileName = Guid.NewGuid() + Path.GetExtension(dto.ImageFile.FileName);
-                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/img", fileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await dto.ImageFile.CopyToAsync(stream);
-                }
-
-                dto.ImageUrl = "/img/" + fileName;
+                dto.ImageUrl = await _fileStorage.SaveFileAsync(dto.ImageFile);
             }
 
             // Attach broker ID from logged-in user
