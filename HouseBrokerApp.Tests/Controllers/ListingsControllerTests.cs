@@ -1,5 +1,6 @@
 ﻿using HouseBrokerApp.Application.DTOs;
 using HouseBrokerApp.Application.Interfaces;
+using HouseBrokerApp.Core.Enums;
 using HouseBrokerApp.Infrastructure.Identity;
 using HouseBrokerApp.Web.Controllers;
 using Microsoft.AspNetCore.Identity;
@@ -49,13 +50,17 @@ namespace HouseBrokerApp.Tests.Controllers
         {
             // Arrange
             var listings = new List<PropertyListingDto>
-                {
-                    new() { Id = Guid.NewGuid(), PropertyType = "House", Location = "KTM", Price = 5000000 },
-                    new() { Id = Guid.NewGuid(), PropertyType = "Apartment", Location = "Lalitpur", Price = 6000000 }
-                };
+                        {
+                            new() { Id = Guid.NewGuid(), PropertyType = PropertyType.House, Location = "KTM", Price = 5000000 },
+                            new() { Id = Guid.NewGuid(), PropertyType = PropertyType.Apartment, Location = "Lalitpur", Price = 6000000 }
+                        };
 
-            _mockListingService.Setup(s => s.SearchAsync(It.IsAny<string>(), It.IsAny<decimal?>(), It.IsAny<decimal?>(), It.IsAny<string>()))
-                               .ReturnsAsync(listings);
+            _mockListingService.Setup(s => s.SearchAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<decimal?>(),
+                    It.IsAny<decimal?>(),
+                    It.IsAny<PropertyType?>()))  
+                .ReturnsAsync(listings);
 
             var searchModel = new ListingSearchModel
             {
@@ -70,16 +75,25 @@ namespace HouseBrokerApp.Tests.Controllers
 
             // Assert
             var viewResult = Assert.IsType<ViewResult>(result);
-            var model = Assert.IsAssignableFrom<ListingSearchModel>(viewResult.Model);
+            var model = Assert.IsType<ListingSearchModel>(viewResult.Model);
+
             Assert.Equal(2, model.Listings.Count());
+            Assert.Contains(model.Listings, l => l.PropertyType == PropertyType.House);
+            Assert.Contains(model.Listings, l => l.PropertyType == PropertyType.Apartment);
         }
+
+
 
         // DETAILS
         [Fact]
         public async Task Details_ReturnsView_WhenListingExists()
         {
             var id = Guid.NewGuid();
-            var dto = new PropertyListingDto { Id = id, PropertyType = "House" };
+            var dto = new PropertyListingDto
+            {
+                Id = id,
+                PropertyType = PropertyType.House // enum instead of string
+            };
 
             _mockListingService.Setup(s => s.GetByIdAsync(id)).ReturnsAsync(dto);
 
@@ -87,7 +101,7 @@ namespace HouseBrokerApp.Tests.Controllers
 
             var viewResult = Assert.IsType<ViewResult>(result);
             var model = Assert.IsType<PropertyListingDto>(viewResult.Model);
-            Assert.Equal("House", model.PropertyType);
+            Assert.Equal(PropertyType.House, model.PropertyType); // enum check
         }
 
         [Fact]
@@ -108,7 +122,7 @@ namespace HouseBrokerApp.Tests.Controllers
             var dto = new PropertyListingDto
             {
                 Id = Guid.NewGuid(),
-                PropertyType = "House",
+                PropertyType = PropertyType.House, // enum
                 Location = "KTM",
                 Price = 5000000
             };
@@ -126,19 +140,26 @@ namespace HouseBrokerApp.Tests.Controllers
         [Fact]
         public async Task Create_Post_ReturnsView_WhenModelStateIsInvalid()
         {
+            // Arrange
             var dto = new PropertyListingDto
             {
-                PropertyType = "", // invalid
+                Id = Guid.NewGuid(),
+                PropertyType = PropertyType.House, 
                 Location = "KTM",
                 Price = 5000000
             };
 
+            // Force validation error (simulate missing/invalid property type in ModelState)
             _controller.ModelState.AddModelError("PropertyType", "Required");
 
+            // Act
             var result = await _controller.Create(dto);
 
+            // Assert
             var viewResult = Assert.IsType<ViewResult>(result);
-            Assert.Equal(dto, viewResult.Model);
+            var model = Assert.IsType<PropertyListingDto>(viewResult.Model);
+
+            Assert.Equal(dto, model); // same dto returned to the view
             _mockListingService.Verify(s => s.AddAsync(It.IsAny<PropertyListingDto>()), Times.Never);
         }
 
@@ -149,7 +170,7 @@ namespace HouseBrokerApp.Tests.Controllers
             var dto = new PropertyListingDto
             {
                 Id = Guid.NewGuid(),
-                PropertyType = "House",
+                PropertyType = PropertyType.House,
                 Location = "KTM",
                 Price = 7000000
             };
@@ -165,20 +186,26 @@ namespace HouseBrokerApp.Tests.Controllers
         [Fact]
         public async Task Edit_Post_ReturnsView_WhenModelStateIsInvalid()
         {
+            // Arrange
             var dto = new PropertyListingDto
             {
                 Id = Guid.NewGuid(),
-                PropertyType = "",
+                PropertyType = PropertyType.House,
                 Location = "KTM",
                 Price = 7000000
             };
 
+            // Force a validation error as if PropertyType were missing
             _controller.ModelState.AddModelError("PropertyType", "Required");
 
+            // Act
             var result = await _controller.Edit(dto);
 
+            // Assert
             var viewResult = Assert.IsType<ViewResult>(result);
-            Assert.Equal(dto, viewResult.Model);
+            var model = Assert.IsType<PropertyListingDto>(viewResult.Model);
+
+            Assert.Equal(dto, model); // should return same dto back to view
             _mockListingService.Verify(s => s.UpdateAsync(It.IsAny<PropertyListingDto>()), Times.Never);
         }
 

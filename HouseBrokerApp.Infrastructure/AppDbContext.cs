@@ -14,8 +14,27 @@ namespace HouseBrokerApp.Infrastructure
     {
         public DbSet<PropertyListing> Listings { get; set; }
         public DbSet<CommissionRule> CommissionRules { get; set; }
-
+        
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+
+            builder.Entity<PropertyListing>(entity =>
+            {
+                entity.Property(p => p.PropertyType)
+                      .IsRequired()
+                      .HasMaxLength(100);
+
+                entity.Property(p => p.Location)
+                      .IsRequired()
+                      .HasMaxLength(200);
+
+                entity.Property(p => p.Price)
+                      .HasColumnType("decimal(18,2)");
+            });
+        }
 
         /// <summary>
         /// Override of SaveChangesAsync to automatically update timestamps.

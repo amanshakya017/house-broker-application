@@ -1,6 +1,7 @@
 ﻿using HouseBrokerApp.Application.DTOs;
 using HouseBrokerApp.Application.Services;
 using HouseBrokerApp.Core.Entities;
+using HouseBrokerApp.Core.Enums;
 using HouseBrokerApp.Core.Interfaces;
 using Microsoft.Extensions.Caching.Memory;
 using Moq;
@@ -30,17 +31,26 @@ namespace HouseBrokerApp.Tests.Services
         [Fact]
         public async Task GetAllAsync_ReturnsFromRepository_WhenCacheIsEmpty()
         {
+            // Arrange
             var listings = new List<PropertyListing>
-        {
-            new() { Id = Guid.NewGuid(), PropertyType = "House", Location = "KTM", Price = 5000000 }
-        };
+                            {
+                                new()
+                                {
+                                    Id = Guid.NewGuid(),
+                                    PropertyType = PropertyType.House,  // ✅ Enum instead of string
+                                    Location = "KTM",
+                                    Price = 5000000
+                                }
+                            };
 
             _mockRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(listings);
 
+            // Act
             var result = await _listingService.GetAllAsync();
 
+            // Assert
             Assert.Single(result);
-            Assert.Equal("House", result.First().PropertyType);
+            Assert.Equal(PropertyType.House, result.First().PropertyType); // ✅ Enum check
         }
 
         [Fact]
@@ -48,7 +58,7 @@ namespace HouseBrokerApp.Tests.Services
         {
             var listings = new List<PropertyListing>
         {
-            new() { Id = Guid.NewGuid(), PropertyType = "Flat", Location = "KTM", Price = 3000000 }
+            new() { Id = Guid.NewGuid(), PropertyType =  PropertyType.Flat, Location = "KTM", Price = 3000000 }
         };
 
             _mockRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(listings);
@@ -68,7 +78,7 @@ namespace HouseBrokerApp.Tests.Services
         {
             var dto = new PropertyListingDto
             {
-                PropertyType = "Apartment",
+                PropertyType = PropertyType.Apartment,
                 Location = "Lalitpur",
                 Price = 6000000,
                 BrokerId = Guid.NewGuid()
@@ -90,7 +100,7 @@ namespace HouseBrokerApp.Tests.Services
         {
             var dto = new PropertyListingDto
             {
-                PropertyType = "Villa",
+                PropertyType = PropertyType.Commercial,
                 Location = "Bhaktapur",
                 Price = 12000000, // > 1 crore
                 BrokerId = Guid.NewGuid()
@@ -114,7 +124,7 @@ namespace HouseBrokerApp.Tests.Services
         public async Task DeleteAsync_RemovesListing()
         {
             var id = Guid.NewGuid();
-            var entity = new PropertyListing { Id = id, PropertyType = "Land", Price = 4000000 };
+            var entity = new PropertyListing { Id = id, PropertyType = PropertyType.Land, Price = 4000000 };
 
             _mockRepo.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(entity);
 

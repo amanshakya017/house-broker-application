@@ -2,7 +2,7 @@
 <h2>Listing Details</h2>
 <div class="card">
     <div class="card-body">
-        <h5 class="card-title">@Model.PropertyType - @Model.Location</h5>
+        <h5 class="card-title">@Model.PropertyType.ToString() - @Model.Location</h5>
         <p><strong>Price:</strong> @Model.Price.ToString("C")</p>
         <p><strong>Features:</strong> @Model.Features</p>
         <p><strong>Description:</strong> @Model.Description</p>
@@ -13,7 +13,7 @@
 
         @if (User.IsInRole("Broker"))
         {
-            <p class="text-success"><strong>Commission:</strong> @Model.Commission.ToString("C")</p>
+            <p class="text-success"><strong>Commission:</strong> @Model.Commission?.ToString("C")</p>
         }
     </div>
 </div>

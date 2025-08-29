@@ -1,8 +1,11 @@
 using HouseBrokerApp.Application.DTOs;
 using HouseBrokerApp.Application.Interfaces;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+using HouseBrokerApp.Core.Enums;
+using HouseBrokerApp.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 
 namespace HouseBrokerApp.Web.ApiControllers
 {
@@ -11,10 +14,12 @@ namespace HouseBrokerApp.Web.ApiControllers
     public class ListingsApiController : ControllerBase
     {
         private readonly IListingService _listingService;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public ListingsApiController(IListingService listingService)
+        public ListingsApiController(IListingService listingService, UserManager<ApplicationUser> userManager)
         {
             _listingService = listingService;
+            _userManager = userManager;
         }
 
         /// <summary>
@@ -49,17 +54,92 @@ namespace HouseBrokerApp.Web.ApiControllers
         [HttpPost]
         [Authorize(
             AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme,
-            Roles = "Broker")] 
+            Roles = "Broker")]
         [ProducesResponseType(typeof(PropertyListingDto), 201)]
         [ProducesResponseType(400)]
         [ProducesResponseType(401)]
         [ProducesResponseType(403)]
-        public async Task<IActionResult> Create([FromBody] PropertyListingDto dto)
+        [RequestSizeLimit(10_000_000)] // 10MB limit
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> Create([FromForm] PropertyListingDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
+            // Save uploaded image if provided
+            if (dto.ImageFile != null)
+            {
+                var fileName = Guid.NewGuid() + Path.GetExtension(dto.ImageFile.FileName);
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/img", fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await dto.ImageFile.CopyToAsync(stream);
+                }
+
+                dto.ImageUrl = "/img/" + fileName;
+            }
+
+            // Attach broker ID from logged-in user
+            var user = await _userManager.GetUserAsync(User);
+            dto.BrokerId = user!.Id;
+
             await _listingService.AddAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = dto.Id }, dto);
+        }
+
+        /// <summary>
+        /// Update an existing listing (with optional image replacement).
+        /// </summary>
+        [HttpPut("{id:guid}")]
+        [Authorize(
+            AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme,
+            Roles = "Broker")]
+        [Consumes("multipart/form-data")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [RequestSizeLimit(10_000_000)] // 10MB limit
+        public async Task<IActionResult> Update(Guid id, [FromForm] PropertyListingDto dto)
+        {
+            if (id != dto.Id) return BadRequest("ID mismatch");
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var existing = await _listingService.GetByIdAsync(id);
+            if (existing == null) return NotFound();
+
+            if (dto.ImageFile != null)
+            {
+                var fileName = Guid.NewGuid() + Path.GetExtension(dto.ImageFile.FileName);
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/img", fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await dto.ImageFile.CopyToAsync(stream);
+                }
+
+                dto.ImageUrl = "/img/" + fileName;
+            }
+
+            await _listingService.UpdateAsync(dto);
+            return NoContent();
+        }
+
+        /// <summary>
+        /// Delete a property listing by ID.
+        /// </summary>
+        [HttpDelete("{id:guid}")]
+        [Authorize(
+            AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme,
+            Roles = "Broker")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            var existing = await _listingService.GetByIdAsync(id);
+            if (existing == null) return NotFound();
+
+            await _listingService.DeleteAsync(id);
+            return NoContent();
         }
 
         /// <summary>
@@ -69,7 +149,7 @@ namespace HouseBrokerApp.Web.ApiControllers
         [AllowAnonymous]
         [ProducesResponseType(typeof(IEnumerable<PropertyListingDto>), 200)]
         public async Task<IActionResult> Search([FromQuery] string? location, [FromQuery] decimal? minPrice,
-                                                [FromQuery] decimal? maxPrice, [FromQuery] string? propertyType)
+                                                [FromQuery] decimal? maxPrice, [FromQuery] PropertyType? propertyType)
         {
             var results = await _listingService.SearchAsync(location, minPrice, maxPrice, propertyType);
             return Ok(results);

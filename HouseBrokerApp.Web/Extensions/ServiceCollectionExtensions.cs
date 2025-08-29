@@ -43,23 +43,30 @@ namespace HouseBrokerApp.Web.Extensions
             // JWT Authentication
             var jwtKey = config["Jwt:Key"] ?? "IcDq7ymDFluNKtCDvJQAh/JkVw6gDPwc+XYBvXYuodA=";
             var jwtIssuer = config["Jwt:Issuer"] ?? "HouseBrokerApp";
+            var jwtAudience = config["Jwt:Audience"] ?? "HouseBrokerAppUsers";
 
-            // Keep Identity cookies as default (Identity sets this already)
-            services.AddAuthentication()
-                .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
+            // Authentication setup
+            services.AddAuthentication(options =>
+            {
+                // Default scheme for MVC = cookies
+                options.DefaultScheme = IdentityConstants.ApplicationScheme;
+                options.DefaultChallengeScheme = IdentityConstants.ApplicationScheme;
+            })
+            .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    options.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateIssuer = true,
-                        ValidateAudience = true,
-                        ValidateLifetime = true,
-                        ValidateIssuerSigningKey = true,
-                        ValidIssuer = jwtIssuer,
-                        ValidAudience = jwtIssuer,
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
-                    };
-                });
-
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = config["Jwt:Issuer"],
+                    ValidAudience = config["Jwt:Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(
+                        Convert.FromBase64String(config["Jwt:Key"]!)
+                    )
+                };
+            });
             return services;
         }
     }

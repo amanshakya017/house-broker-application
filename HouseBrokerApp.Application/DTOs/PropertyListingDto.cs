@@ -1,4 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using HouseBrokerApp.Core.Enums;
+using Microsoft.AspNetCore.Http;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace HouseBrokerApp.Application.DTOs
 {
@@ -12,14 +16,14 @@ namespace HouseBrokerApp.Application.DTOs
         /// <summary>
         /// Unique identifier of the property listing.
         /// </summary>
-        public Guid Id { get; set; }
+        /// 
+        public Guid? Id { get; set; }
 
         /// <summary>
         /// Type of property (e.g., House, Apartment, Land).
         /// </summary>
         [Required(ErrorMessage = "Property type is required")]
-        [StringLength(100, ErrorMessage = "Property type cannot exceed 100 characters.")]
-        public string PropertyType { get; set; } = string.Empty;
+        public PropertyType PropertyType { get; set; } 
 
         /// <summary>
         /// Location of the property (city, district, or detailed address).
@@ -44,15 +48,14 @@ namespace HouseBrokerApp.Application.DTOs
         /// <summary>
         /// Detailed description of the property (maximum 1000 characters).
         /// </summary>
-        [Required(ErrorMessage = "Description is required")]
         [StringLength(1000, ErrorMessage = "Description cannot exceed 1000 characters.")]
         public string Description { get; set; } = string.Empty;
-
-        /// <summary>
-        /// URL of the property image (must be a valid HTTP/HTTPS link).
-        /// </summary>
-        [Url(ErrorMessage = "Image URL must be valid.")]
-        public string ImageUrl { get; set; } = string.Empty;
+        
+        [JsonIgnore]
+        public string? ImageUrl { get; set; } = string.Empty;
+        [NotMapped]
+        [Display(Name = "Upload Image")]
+        public IFormFile? ImageFile { get; set; }  
 
         /// <summary>
         /// Unique identifier of the broker who owns the listing.
@@ -62,6 +65,8 @@ namespace HouseBrokerApp.Application.DTOs
         /// <summary>
         /// Commission amount calculated based on property price and commission rules.
         /// </summary>
-        public decimal Commission { get; set; }
+        [NotMapped]
+        [JsonIgnore]
+        public decimal? Commission { get; set; }
     }
 }

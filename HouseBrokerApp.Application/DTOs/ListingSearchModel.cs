@@ -1,4 +1,6 @@
-﻿namespace HouseBrokerApp.Application.DTOs
+﻿using HouseBrokerApp.Core.Enums;
+
+namespace HouseBrokerApp.Application.DTOs
 {
     /// <summary>
     /// Data Transfer Object (DTO) and ViewModel used for property listing search functionality.
@@ -24,7 +26,7 @@
         /// <summary>
         /// Property type filter (e.g., "House", "Apartment", "Land") (optional).
         /// </summary>
-        public string? PropertyType { get; set; }
+        public PropertyType? PropertyType { get; set; }
 
         /// <summary>
         /// A collection of property listings that match the applied search filters.

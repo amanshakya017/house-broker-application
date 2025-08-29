@@ -1,11 +1,12 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using HouseBrokerApp.Core.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace HouseBrokerApp.Core.Entities
 {
     public class PropertyListing : BaseEntity<Guid>
     {
         [Required]
-        public string PropertyType { get; set; } = string.Empty;
+        public PropertyType PropertyType { get; set; } 
 
         [Required]
         public string Location { get; set; } = string.Empty;

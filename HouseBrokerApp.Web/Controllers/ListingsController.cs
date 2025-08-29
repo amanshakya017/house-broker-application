@@ -65,9 +65,23 @@ namespace HouseBrokerApp.Web.Controllers
         /// <returns>Redirects to Index on success; otherwise returns the same view with validation errors.</returns>
         [Authorize(Roles = "Broker")]
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(PropertyListingDto dto)
         {
             if (!ModelState.IsValid) return View(dto);
+
+            if (dto.ImageFile != null && dto.ImageFile.Length > 0)
+            {
+                var fileName = Guid.NewGuid() + Path.GetExtension(dto.ImageFile.FileName);
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/img", fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await dto.ImageFile.CopyToAsync(stream);
+                }
+
+                dto.ImageUrl = "/img/" + fileName;
+            }
 
             var user = await _userManager.GetUserAsync(User);
             dto.BrokerId = user!.Id;
@@ -102,7 +116,18 @@ namespace HouseBrokerApp.Web.Controllers
         public async Task<IActionResult> Edit(PropertyListingDto dto)
         {
             if (!ModelState.IsValid) return View(dto);
+            if (dto.ImageFile != null && dto.ImageFile.Length > 0)
+            {
+                var fileName = Guid.NewGuid() + Path.GetExtension(dto.ImageFile.FileName);
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/img", fileName);
 
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await dto.ImageFile.CopyToAsync(stream);
+                }
+
+                dto.ImageUrl = "/img/" + fileName;
+            }
             await _listingService.UpdateAsync(dto);
             return RedirectToAction(nameof(Index));
         }

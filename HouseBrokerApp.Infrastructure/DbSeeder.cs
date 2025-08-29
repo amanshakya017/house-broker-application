@@ -1,4 +1,5 @@
 ﻿using HouseBrokerApp.Core.Entities;
+using HouseBrokerApp.Core.Enums;
 using HouseBrokerApp.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -64,7 +65,7 @@ namespace HouseBrokerApp.Infrastructure
             {
                 new PropertyListing
                 {
-                    PropertyType = "Apartment",
+                    PropertyType = PropertyType.Apartment,
                     Location = "Kathmandu",
                     Price = 4500000,
                     Features = "2BHK, Balcony, Parking",
@@ -75,7 +76,7 @@ namespace HouseBrokerApp.Infrastructure
                 },
                 new PropertyListing
                 {
-                    PropertyType = "House",
+                    PropertyType = PropertyType.House,
                     Location = "Bhaktapur",
                     Price = 7500000,
                     Features = "3 Floors, Garden, Garage",
@@ -86,7 +87,7 @@ namespace HouseBrokerApp.Infrastructure
                 },
                 new PropertyListing
                 {
-                    PropertyType = "Land",
+                    PropertyType = PropertyType.Land,
                     Location = "Lalitpur",
                     Price = 12000000,
                     Features = "10 Aana Plot",

@@ -35,15 +35,7 @@ namespace HouseBrokerApp.Infrastructure.Services
                 throw new InvalidOperationException("JWT Key is missing from configuration.");
 
             // Try Base64 first, fallback to UTF8
-            byte[] keyBytes = Encoding.UTF8.GetBytes(keyString);
-            try
-            {
-                keyBytes = Convert.FromBase64String(keyString);
-            }
-            catch (FormatException)
-            {
-                keyBytes = Encoding.UTF8.GetBytes(keyString);
-            }
+            byte[] keyBytes = Convert.FromBase64String(keyString);
 
             if (keyBytes.Length < 32) // Must be >= 256 bits
                 throw new InvalidOperationException("JWT Key must be at least 256 bits (32 bytes). Please update appsettings.json.");

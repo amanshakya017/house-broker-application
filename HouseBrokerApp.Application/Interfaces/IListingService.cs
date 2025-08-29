@@ -1,4 +1,5 @@
 ﻿using HouseBrokerApp.Application.DTOs;
+using HouseBrokerApp.Core.Enums;
 
 namespace HouseBrokerApp.Application.Interfaces
 {
@@ -9,6 +10,6 @@ namespace HouseBrokerApp.Application.Interfaces
         Task AddAsync(PropertyListingDto dto);
         Task UpdateAsync(PropertyListingDto dto);
         Task DeleteAsync(Guid id);
-        Task<IEnumerable<PropertyListingDto>> SearchAsync(string? location, decimal? minPrice, decimal? maxPrice, string? propertyType);
+        Task<IEnumerable<PropertyListingDto>> SearchAsync(string? location, decimal? minPrice, decimal? maxPrice, PropertyType? propertyType);
     }
 }

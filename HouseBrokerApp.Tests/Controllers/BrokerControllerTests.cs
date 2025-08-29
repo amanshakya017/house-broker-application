@@ -1,7 +1,8 @@
-﻿using HouseBrokerApp.Web.Controllers;
-using HouseBrokerApp.Application.Interfaces;
+﻿using HouseBrokerApp.Application.Interfaces;
 using HouseBrokerApp.Core.Entities;
+using HouseBrokerApp.Core.Enums;
 using HouseBrokerApp.Infrastructure.Identity;
+using HouseBrokerApp.Web.Controllers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -62,11 +63,18 @@ namespace HouseBrokerApp.Tests.Controllers
             _mockUserManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>()))
                 .ReturnsAsync(user);
 
-            // Return a real PropertyListing list (not object list)
+            // Return a real PropertyListing list with enum PropertyType
             var listings = new List<PropertyListing>
-            {
-                new PropertyListing { PropertyType = "House", Location = "KTM", Price = 5000000, BrokerId = user.Id, Commission = 100000 }
-            };
+                            {
+                                new PropertyListing
+                                {
+                                    PropertyType = PropertyType.House,
+                                    Location = "KTM",
+                                    Price = 5000000,
+                                    BrokerId = user.Id,
+                                    Commission = 100000
+                                }
+                            };
 
             _mockBrokerService.Setup(s => s.GetBrokerListingsAsync(user.Id))
                 .ReturnsAsync(listings);
@@ -82,8 +90,9 @@ namespace HouseBrokerApp.Tests.Controllers
             var model = Assert.IsAssignableFrom<IEnumerable<PropertyListing>>(view.Model);
 
             Assert.Single(model);
-            Assert.Equal("House", model.First().PropertyType);
+            Assert.Equal(PropertyType.House, model.First().PropertyType);
             Assert.Equal(50000, _controller.ViewBag.TotalCommission);
         }
+
     }
 }

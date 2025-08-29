@@ -1,6 +1,7 @@
 ﻿using HouseBrokerApp.Application.DTOs;
 using HouseBrokerApp.Application.Interfaces;
 using HouseBrokerApp.Core.Entities;
+using HouseBrokerApp.Core.Enums;
 using HouseBrokerApp.Core.Interfaces;
 using Microsoft.Extensions.Caching.Memory;
 
@@ -110,21 +111,24 @@ namespace HouseBrokerApp.Application.Services
         /// <param name="dto">The updated listing DTO.</param>
         public async Task UpdateAsync(PropertyListingDto dto)
         {
-            var entity = await _unitOfWork.Repository<PropertyListing>().GetByIdAsync(dto.Id);
-            if (entity == null) return;
+            if (dto.Id.HasValue)
+            {
+                var entity = await _unitOfWork.Repository<PropertyListing>().GetByIdAsync(dto.Id.Value);
+                if (entity == null) return;
 
-            entity.PropertyType = dto.PropertyType;
-            entity.Location = dto.Location;
-            entity.Price = dto.Price;
-            entity.Features = dto.Features;
-            entity.Description = dto.Description;
-            entity.ImageUrl = dto.ImageUrl;
-            entity.BrokerId = dto.BrokerId;
-            entity.Commission = CalculateCommission(dto.Price);
+                entity.PropertyType = dto.PropertyType;
+                entity.Location = dto.Location;
+                entity.Price = dto.Price;
+                entity.Features = dto.Features;
+                entity.Description = dto.Description;
+                entity.ImageUrl = dto.ImageUrl;
+                entity.BrokerId = dto.BrokerId;
+                entity.Commission = CalculateCommission(dto.Price);
 
-            _unitOfWork.Repository<PropertyListing>().Update(entity);
-            await _unitOfWork.SaveChangesAsync();
-            _cache.Remove(CacheKey);
+                _unitOfWork.Repository<PropertyListing>().Update(entity);
+                await _unitOfWork.SaveChangesAsync();
+                _cache.Remove(CacheKey); 
+            }
         }
 
         /// <summary>
@@ -164,19 +168,23 @@ namespace HouseBrokerApp.Application.Services
         /// <param name="maxPrice">Maximum price (optional).</param>
         /// <param name="propertyType">Filter by property type (optional).</param>
         /// <returns>A filtered collection of <see cref="PropertyListingDto"/>.</returns>
-        public async Task<IEnumerable<PropertyListingDto>> SearchAsync(string? location, decimal? minPrice, decimal? maxPrice, string? propertyType)
+        public async Task<IEnumerable<PropertyListingDto>> SearchAsync(string? location, decimal? minPrice, decimal? maxPrice, PropertyType? propertyType)
         {
             var query = (await GetAllAsync()).AsQueryable();
 
+            // Location filter
             if (!string.IsNullOrWhiteSpace(location))
                 query = query.Where(x => x.Location.Contains(location, StringComparison.OrdinalIgnoreCase));
 
-            if (!string.IsNullOrWhiteSpace(propertyType))
-                query = query.Where(x => x.PropertyType.Contains(propertyType, StringComparison.OrdinalIgnoreCase));
+            // PropertyType filter (enum as int)
+            if (propertyType.HasValue)
+                query = query.Where(x => x.PropertyType == propertyType.Value);  // ✅ enum comparison
 
+            // Min price filter
             if (minPrice.HasValue)
                 query = query.Where(x => x.Price >= minPrice.Value);
 
+            // Max price filter
             if (maxPrice.HasValue)
                 query = query.Where(x => x.Price <= maxPrice.Value);
 
